@@ -1,0 +1,18 @@
+services:
+  frontend:
+    build:
+      context: ../../frontend
+      dockerfile: ../docker/dev/Dockerfile.frontend
+    image: luxolis-frontend-app
+    ports:
+      - 3000:3000
+  backend:
+    build:
+      context: ../../
+      dockerfile: docker/dev/Dockerfile.backend
+    image: luxolis-backend-app
+    volumes:
+      - ../../backend:/var/www/html
+      - ../../backend/storage/database:/database
+    ports:
+      - 8000:8000

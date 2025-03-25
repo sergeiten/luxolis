@@ -1,0 +1,5 @@
+#!/bin/sh
+
+chown -R nobody:nobody /var/www/html/storage/app/public
+
+exec /usr/bin/supervisord -c /etc/supervisor/conf.d/supervisord.conf

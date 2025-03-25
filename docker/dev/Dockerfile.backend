@@ -1,0 +1,88 @@
+FROM composer:2.6 AS build
+COPY ./backend /app/
+RUN composer install --prefer-dist --no-dev --optimize-autoloader --no-interaction --ignore-platform-reqs
+
+FROM php:8.3-fpm-alpine
+
+
+# Setup document root
+WORKDIR /var/www/html
+
+# Install packages and remove default server definition
+RUN apk add --no-cache \
+    sqlite \ 
+    sqlite-dev \
+    tzdata \
+    curl \
+    nginx \
+    gcc \
+    musl-dev \
+    make \
+    curl-dev \
+    openssl-dev \
+    libpng-dev \
+    jpeg-dev \
+    pcre-dev ${PHPIZE_DEPS} \
+    php83-pear \
+    php83-dev \
+    php83 \
+    php83-ctype \
+    php83-curl \
+    php83-dom \
+    php83-fileinfo \
+    php83-fpm \
+    php83-gd \
+    php83-intl \
+    php83-mbstring \
+    php83-opcache \
+    php83-openssl \
+    php83-phar \
+    php83-session \
+    php83-tokenizer \
+    php83-xml \
+    php83-simplexml \
+    php83-xmlreader \
+    php83-xmlwriter \
+    php83-pdo \
+    php83-pdo_sqlite \
+    php83-exif \
+    supervisor
+
+# RUN docker-php-ext-configure pdo_sqlite --with-pdo-sqlite=/usr
+RUN docker-php-ext-install pdo pdo_sqlite
+
+RUN apk del pcre-dev ${PHPIZE_DEPS}
+
+# Configure nginx - http
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+# Configure nginx - default server
+COPY docker/conf.d /etc/nginx/conf.d/
+
+# Configure PHP-FPM
+ENV PHP_INI_DIR /etc/php83
+COPY docker/fpm-pool.conf ${PHP_INI_DIR}/php-fpm.d/www.conf
+
+# Configure supervisord
+COPY docker/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+COPY docker/start-container /usr/local/bin/start-container
+
+
+# Make sure files/folders needed by the processes are accessable when they run under the nobody user
+RUN chown -R nobody:nobody /var/www/html /run /var/lib/nginx /var/log/nginx /var/log/php83 && \
+    chmod +x /usr/local/bin/start-container
+
+# Add application
+COPY --from=build --chown=nobody /app /var/www/html
+COPY --chown=nobody backend/.env /var/www/html/.env
+
+# Expose the port nginx is reachable on
+EXPOSE 8000
+
+# Let supervisord start nginx & php-fpm
+ENTRYPOINT ["start-container"]
+
+# Switch to use a non-root user from here on
+USER nobody
+
+# Configure a healthcheck to validate that everything is up&running
+HEALTHCHECK --timeout=10s CMD curl --silent --fail http://127.0.0.1:80/fpm-ping
