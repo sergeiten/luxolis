@@ -16,60 +16,90 @@ docker 27.5.1
 
 ## Getting started
 
-#### Create .env file and set env variables
+#### Create .env file in backend directory with the following content:
 
 ```
-# Absolute path to directory for storing uploaded images
-IMAGE_UPLOAD_DIR=/directory/for/uploads
+APP_NAME=Laravel
+APP_ENV=local
+APP_KEY=base64:EW+E1HetTxfqNqeVmlTIenv9L4wtpgC2TO6JkgzJ6m0=
+APP_DEBUG=true
+APP_URL=http://localhost
 
-DB_USER="gopicky"
-DB_HOST="database"
-DB_PORT=5432
-DB_PASSWORD="gopicky"
-DB_DATABASE="gopicky"
+APP_LOCALE=en
+APP_FALLBACK_LOCALE=en
+APP_FAKER_LOCALE=en_US
 
-# Absolute path to directory for storing database files
-DB_DATADIR=/directory/for/database/files
+APP_MAINTENANCE_DRIVER=file
+# APP_MAINTENANCE_STORE=database
+
+PHP_CLI_SERVER_WORKERS=4
+
+BCRYPT_ROUNDS=12
+
+LOG_CHANNEL=stack
+LOG_STACK=single
+LOG_DEPRECATIONS_CHANNEL=null
+LOG_LEVEL=debug
+
+DB_CONNECTION=sqlite
+# DB_HOST=127.0.0.1
+# DB_PORT=3306
+# DB_DATABASE=laravel
+# DB_USERNAME=root
+# DB_PASSWORD=
+
+SESSION_DRIVER=database
+SESSION_LIFETIME=120
+SESSION_ENCRYPT=false
+SESSION_PATH=/
+SESSION_DOMAIN=null
+
+BROADCAST_CONNECTION=log
+FILESYSTEM_DISK=local
+QUEUE_CONNECTION=database
+
+CACHE_STORE=database
+# CACHE_PREFIX=
+
+MEMCACHED_HOST=127.0.0.1
+
+REDIS_CLIENT=phpredis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
+
+MAIL_MAILER=log
+MAIL_SCHEME=null
+MAIL_HOST=127.0.0.1
+MAIL_PORT=2525
+MAIL_USERNAME=null
+MAIL_PASSWORD=null
+MAIL_FROM_ADDRESS="hello@example.com"
+MAIL_FROM_NAME="${APP_NAME}"
+
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+AWS_DEFAULT_REGION=us-east-1
+AWS_BUCKET=
+AWS_USE_PATH_STYLE_ENDPOINT=false
+
+VITE_APP_NAME="${APP_NAME}"
 ```
 
 #### Run docker containers
 
 ```bash
-docker compose --env-file .env.dev -f docker/dev/compose.yaml up -d
+docker compose -f docker/dev/compose.yaml up -d
 ```
 
-#### Import schema.sql
-
-Replace `<DB_USER>` and `<DB_DATABASE>` with values from .env.dev file.
+#### Run migration
 
 ```bash
-docker compose --env-file .env.dev -f docker/dev/compose.yaml exec -T database psql -U <DB_USER> -d <DB_DATABASE> < schema.sql
+docker compose -f docker/dev/compose.yaml exec backend php artisan migrate
 ```
-
-Or use any GUI application to import schema.sql file
 
 #### Running
 
-The application should be available at `http://localhost:3001`
+The frontent application should be available at `http://localhost:3000`
 
-## Architecture
-
-Every time a user opens the application, it generates a session ID that is stored until the user closes the browser tab. The session ID is used to create a directory for the current session, where compressed images are stored - this prevents image name collisions. Users can set the compression quality (default: 50%). For each quality level, the application creates a separate file:
-
-```
-IMAGE_UPLOAD_DIR/session_id/quality_filename.ext
-```
-
-If a user tries to compress the same image with the same quality, the application returns the previously compressed image.
-
-In production environment uploaded images will be removed after 1 hour.
-
-The application stores basic image compression information in the database, which can be used for analytics purposes.
-
-## Improvements
-
-- Allow users to upload multiple images at once
-- Allow users to resize image
-- Supports more image formats (GIF, WebP)
-- Add support cloud store services (AWS S3, Cloudflare)
-- Account creation to save image compression history
+The backend application should be available at `http://localhost:8000`
